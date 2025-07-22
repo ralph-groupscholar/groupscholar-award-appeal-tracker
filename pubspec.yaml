@@ -1,0 +1,15 @@
+name: groupscholar_award_appeal_tracker
+description: Group Scholar CLI for tracking scholarship award appeals with Postgres.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.10.9
+
+dependencies:
+  args: ^2.7.0
+  postgres: ^3.5.9
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.29.0

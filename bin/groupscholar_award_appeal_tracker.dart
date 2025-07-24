@@ -8,6 +8,7 @@ void main(List<String> args) async {
     ..addCommand('add')
     ..addCommand('list')
     ..addCommand('update-status')
+    ..addCommand('aging')
     ..addCommand('summary')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage.');
 
@@ -31,6 +32,20 @@ void main(List<String> args) async {
     ..addOption('status', help: 'New status.', valueHelp: 'STATUS')
     ..addOption('notes', help: 'Append notes for context.');
 
+  final agingCommand = parser.commands['aging']!;
+  agingCommand
+    ..addOption('status', help: 'Filter by status.')
+    ..addOption(
+      'min-days',
+      help: 'Minimum days since submission.',
+      defaultsTo: '14',
+    )
+    ..addFlag(
+      'include-closed',
+      help: 'Include approved/denied/withdrawn appeals.',
+      negatable: false,
+    );
+
   try {
     final parsed = parser.parse(args);
     if (parsed['help'] as bool || parsed.command == null) {
@@ -51,6 +66,9 @@ void main(List<String> args) async {
           break;
         case 'update-status':
           await _handleUpdateStatus(store, parsed.command!);
+          break;
+        case 'aging':
+          await _handleAging(store, parsed.command!);
           break;
         case 'summary':
           await _handleSummary(store);
@@ -180,6 +198,62 @@ Future<void> _handleSummary(AppealStore store) async {
   stdout.writeln(renderTable(headers, rows));
 }
 
+Future<void> _handleAging(AppealStore store, ArgResults command) async {
+  final status = command['status'] as String?;
+  final minDaysRaw = command['min-days'] as String?;
+  if (minDaysRaw == null || minDaysRaw.trim().isEmpty) {
+    throw FormatException('Missing required value for min-days.');
+  }
+  final minDays = int.parse(minDaysRaw);
+  final includeClosed = command['include-closed'] as bool;
+
+  final records = await store.list(status: status);
+  final now = DateTime.now();
+  final closedStatuses = {'approved', 'denied', 'withdrawn'};
+
+  final aging = records
+      .where(
+        (record) =>
+            includeClosed ||
+            status != null ||
+            !closedStatuses.contains(record.status),
+      )
+      .map((record) => (record: record, daysOpen: daysBetween(record.submittedOn, now)))
+      .where((entry) => entry.daysOpen >= minDays)
+      .toList()
+    ..sort((a, b) => b.daysOpen.compareTo(a.daysOpen));
+
+  if (aging.isEmpty) {
+    stdout.writeln('No appeals meet the aging criteria.');
+    return;
+  }
+
+  final headers = [
+    'ID',
+    'Scholar',
+    'Status',
+    'Days Open',
+    'Amount',
+    'Submitted',
+    'Owner'
+  ];
+  final rows = aging
+      .map(
+        (entry) => [
+          entry.record.id,
+          entry.record.scholarName,
+          entry.record.status,
+          entry.daysOpen.toString(),
+          formatCurrency(entry.record.appealAmount),
+          formatDate(entry.record.submittedOn),
+          entry.record.owner ?? '-'
+        ],
+      )
+      .toList();
+
+  stdout.writeln(renderTable(headers, rows));
+}
+
 void _printUsage(ArgParser parser) {
   stdout.writeln('Group Scholar Award Appeal Tracker');
   stdout.writeln('');
@@ -190,6 +264,7 @@ void _printUsage(ArgParser parser) {
   stdout.writeln('  add           Log a new appeal.');
   stdout.writeln('  list          List appeals (optionally filtered by status).');
   stdout.writeln('  update-status Update appeal status.');
+  stdout.writeln('  aging         Show open appeals over a minimum age.');
   stdout.writeln('  summary       Show counts and totals by status.');
   stdout.writeln('');
   stdout.writeln(parser.usage);

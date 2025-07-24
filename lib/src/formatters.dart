@@ -14,6 +14,10 @@ String formatDate(DateTime date) {
   return date.toIso8601String().split('T').first;
 }
 
+int daysBetween(DateTime start, DateTime end) {
+  return end.difference(start).inDays;
+}
+
 String renderTable(List<String> headers, List<List<String>> rows) {
   final widths = List<int>.generate(headers.length, (index) {
     final headerWidth = headers[index].length;

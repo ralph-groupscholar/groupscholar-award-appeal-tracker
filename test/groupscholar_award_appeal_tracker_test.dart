@@ -23,4 +23,10 @@ void main() {
     expect(lines.length, 4);
     expect(lines.first.contains('Name'), isTrue);
   });
+
+  test('daysBetween counts full days', () {
+    final start = DateTime.utc(2024, 1, 1, 9);
+    final end = DateTime.utc(2024, 1, 4, 8);
+    expect(daysBetween(start, end), 2);
+  });
 }

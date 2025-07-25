@@ -15,7 +15,9 @@ String formatDate(DateTime date) {
 }
 
 int daysBetween(DateTime start, DateTime end) {
-  return end.difference(start).inDays;
+  final startDate = DateTime.utc(start.year, start.month, start.day);
+  final endDate = DateTime.utc(end.year, end.month, end.day);
+  return endDate.difference(startDate).inDays;
 }
 
 String renderTable(List<String> headers, List<List<String>> rows) {

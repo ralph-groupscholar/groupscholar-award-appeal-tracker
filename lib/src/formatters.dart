@@ -20,6 +20,25 @@ int daysBetween(DateTime start, DateTime end) {
   return endDate.difference(startDate).inDays;
 }
 
+String ageBucketForDays(int days) {
+  if (days < 0) {
+    throw ArgumentError('Days cannot be negative.');
+  }
+  if (days <= 7) {
+    return '0-7';
+  }
+  if (days <= 14) {
+    return '8-14';
+  }
+  if (days <= 30) {
+    return '15-30';
+  }
+  if (days <= 60) {
+    return '31-60';
+  }
+  return '61+';
+}
+
 String renderTable(List<String> headers, List<List<String>> rows) {
   final widths = List<int>.generate(headers.length, (index) {
     final headerWidth = headers[index].length;

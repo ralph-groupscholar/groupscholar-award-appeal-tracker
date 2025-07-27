@@ -30,4 +30,13 @@ void main() {
     expect(daysBetween(start, end), 2);
   });
 
+  test('ageBucketForDays segments into known ranges', () {
+    expect(ageBucketForDays(0), '0-7');
+    expect(ageBucketForDays(7), '0-7');
+    expect(ageBucketForDays(10), '8-14');
+    expect(ageBucketForDays(30), '15-30');
+    expect(ageBucketForDays(45), '31-60');
+    expect(ageBucketForDays(80), '61+');
+  });
+
 }

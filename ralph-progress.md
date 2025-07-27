@@ -11,6 +11,11 @@
 - Updated README and changelog for the new report workflow.
 
 ## Iteration 3
+- Added backlog command for age-bucketed appeal summaries with as-of reporting.
+- Added age bucket helper and tests for the new segmentation.
+- Refreshed README and changelog entries.
+
+## Iteration 3
 - Implemented the days-between helper used by the aging report output.
 - Added unit tests to cover day-difference calculations.
 - Updated the changelog for the bugfix release.

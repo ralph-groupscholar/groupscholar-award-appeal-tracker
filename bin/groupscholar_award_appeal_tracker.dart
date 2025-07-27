@@ -9,6 +9,7 @@ void main(List<String> args) async {
     ..addCommand('list')
     ..addCommand('update-status')
     ..addCommand('aging')
+    ..addCommand('backlog')
     ..addCommand('summary')
     ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage.');
 
@@ -46,6 +47,16 @@ void main(List<String> args) async {
       negatable: false,
     );
 
+  final backlogCommand = parser.commands['backlog']!;
+  backlogCommand
+    ..addOption('status', help: 'Filter by status.')
+    ..addOption('as-of', help: 'Report date.', valueHelp: 'YYYY-MM-DD')
+    ..addFlag(
+      'include-closed',
+      help: 'Include approved/denied/withdrawn appeals.',
+      negatable: false,
+    );
+
   try {
     final parsed = parser.parse(args);
     if (parsed['help'] as bool || parsed.command == null) {
@@ -69,6 +80,9 @@ void main(List<String> args) async {
           break;
         case 'aging':
           await _handleAging(store, parsed.command!);
+          break;
+        case 'backlog':
+          await _handleBacklog(store, parsed.command!);
           break;
         case 'summary':
           await _handleSummary(store);
@@ -254,6 +268,55 @@ Future<void> _handleAging(AppealStore store, ArgResults command) async {
   stdout.writeln(renderTable(headers, rows));
 }
 
+Future<void> _handleBacklog(AppealStore store, ArgResults command) async {
+  final status = command['status'] as String?;
+  final includeClosed = command['include-closed'] as bool;
+  final asOfRaw = command['as-of'] as String?;
+  final asOf = asOfRaw == null ? DateTime.now() : DateTime.parse(asOfRaw);
+
+  final records = await store.list(status: status);
+  final closedStatuses = {'approved', 'denied', 'withdrawn'};
+  final bucketOrder = ['0-7', '8-14', '15-30', '31-60', '61+'];
+  final totals = <String, (int count, num amount)>{};
+
+  for (final record in records) {
+    if (!includeClosed &&
+        status == null &&
+        closedStatuses.contains(record.status)) {
+      continue;
+    }
+    final daysOpen = daysBetween(record.submittedOn, asOf);
+    final bucket = ageBucketForDays(daysOpen);
+    final current = totals[bucket];
+    if (current == null) {
+      totals[bucket] = (1, record.appealAmount);
+    } else {
+      totals[bucket] = (current.$1 + 1, current.$2 + record.appealAmount);
+    }
+  }
+
+  final rows = <List<String>>[];
+  for (final bucket in bucketOrder) {
+    final data = totals[bucket];
+    if (data == null) {
+      continue;
+    }
+    rows.add([
+      bucket,
+      data.$1.toString(),
+      formatCurrency(data.$2),
+    ]);
+  }
+
+  if (rows.isEmpty) {
+    stdout.writeln('No appeals meet the backlog criteria.');
+    return;
+  }
+
+  final headers = ['Age Bucket (Days)', 'Count', 'Total Amount'];
+  stdout.writeln(renderTable(headers, rows));
+}
+
 void _printUsage(ArgParser parser) {
   stdout.writeln('Group Scholar Award Appeal Tracker');
   stdout.writeln('');
@@ -265,6 +328,7 @@ void _printUsage(ArgParser parser) {
   stdout.writeln('  list          List appeals (optionally filtered by status).');
   stdout.writeln('  update-status Update appeal status.');
   stdout.writeln('  aging         Show open appeals over a minimum age.');
+  stdout.writeln('  backlog       Summarize open appeals by aging bucket.');
   stdout.writeln('  summary       Show counts and totals by status.');
   stdout.writeln('');
   stdout.writeln(parser.usage);

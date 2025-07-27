@@ -1,3 +1,8 @@
+## 1.2.0
+
+- Added backlog command to summarize appeals by aging bucket.
+- Added age bucket helper for consistent aging segments.
+
 ## 1.1.1
 
 - Implemented days-between helper used by the aging report.

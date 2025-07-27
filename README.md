@@ -8,6 +8,7 @@ Track scholarship award appeals with a fast CLI and a production-ready Postgres 
 - List appeals with optional status filtering.
 - Update appeal statuses with a single command.
 - Spot aging appeals that need follow-up.
+- Summarize backlog by age bucket and total dollars.
 - Summarize queue volume and total dollars by status.
 
 ## Tech Stack
@@ -67,6 +68,9 @@ dart run bin/groupscholar_award_appeal_tracker.dart summary
 
 # Aging report
 dart run bin/groupscholar_award_appeal_tracker.dart aging --min-days 10
+
+# Backlog aging buckets
+dart run bin/groupscholar_award_appeal_tracker.dart backlog --as-of 2026-02-08
 ```
 
 ## Database Setup
